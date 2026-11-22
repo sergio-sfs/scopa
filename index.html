@@ -75,6 +75,7 @@ input{-webkit-user-select:text;user-select:text;width:100%;font-size:18px;paddin
 #app.s3{--tx:22px;--cw:90px;--ch:128px;--fs:37px}
 #app.s0{--tx:16px;--cw:56px;--ch:80px;--fs:22px}
 </style>
+<script data-goatcounter="https://sergio-sfs.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -280,7 +281,7 @@ function coachHint(){
 /*ENDENGINE*/
 
 /* ===== Interfaccia ===== */
-const VERSION='1.4.0',BUILD='22/11/2026';
+const VERSION='1.4.1',BUILD='22/11/2026';
 const OPT={size:4,game:1,diff:1,variant:0,coach:false,net:'p2p',team:true,deck:0,napola:false,eace:0,acesc:false,redeal:true};
 try{const o=JSON.parse(localStorage.getItem('scopaopt')||'{}');if(o.size>=0&&o.size<=4)OPT.size=o.size;if(o.game>=0&&o.game<=3)OPT.game=o.game;if(o.diff>=0&&o.diff<=3)OPT.diff=o.diff;OPT.variant=o.variant===1?1:0;OPT.coach=o.coach===true;OPT.team=o.team!==false;OPT.napola=o.napola===true;OPT.eace=o.eace===1?1:0;OPT.acesc=o.acesc===true;OPT.redeal=o.redeal!==false;if(o.deck>=0&&o.deck<=2)OPT.deck=o.deck;OPT.net=o.net==='mqtt'||o.net==='ntfy'?o.net:'p2p';}catch(e){}
 const saveOpt=()=>{try{localStorage.setItem('scopaopt',JSON.stringify(OPT));}catch(e){}};
