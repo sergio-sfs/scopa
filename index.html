@@ -128,7 +128,7 @@ const sideName=(s,nm)=>s.map(nm).join(' + ');
 
 function startGame(nopp,allBots,pre){
   const N=nopp+1;
-  G={variant:OPT.variant===1?'a':'n',players:[],table:[],stock:[],turn:0,dealer:N-1,round:0,phase:'wait',sel:null,tsel:[],msg:'',err:false,over:false,rows:null,target:TARGETV[OPT.game],last:-1,mv:null,
+  G={variant:OPT.variant===1?'a':'n',napola:!!OPT.napola,players:[],table:[],stock:[],turn:0,dealer:N-1,round:0,phase:'wait',sel:null,tsel:[],msg:'',err:false,over:false,rows:null,target:TARGETV[OPT.game],last:-1,mv:null,
      sides:(N===4&&OPT.team)?[[0,2],[1,3]]:Array.from({length:N},(_,i)=>[i])};
   G.players.push({name:'Tu',human:!allBots,hand:[],pile:[],scope:0,score:0});
   const bn=shuffle(BOTS.filter(x=>!(ON&&ON.nicks&&ON.nicks.includes(x))));
@@ -158,6 +158,7 @@ const V=(n,t,s)=>n==='Tu'?'Tu '+s:n+' '+t;
 function moveText(mv,nm){
   if(!mv)return'';
   const n=nm(mv.by);
+  if(mv.self)return V(n,'posa','posi')+' '+cs(mv.card)+' sul tavolo vuoto e se lo riprende.';
   let t=mv.take.length?V(n,'prende','prendi')+' '+mv.take.map(cs).join(' + ')+' con '+cs(mv.card):V(n,'posa','posi')+' '+cs(mv.card);
   if(mv.scopa)t+=' — SCOPA! 🧹';
   return t+'.';
@@ -185,7 +186,8 @@ function applyMove(k,cardId,takeIds){
     P.pile.push(c,...take);G.last=k;
     const lastPlay=G.stock.length===0&&G.players.every(p=>!p.hand.length);
     if(!G.table.length&&!lastPlay&&!(G.variant==='a'&&c.r===1)){P.scope++;scopa=true;}
-  }else G.table.push(c);
+  }else if(G.variant==='a'&&c.r===1&&!G.table.length){P.pile.push(c);G.last=k;G.mv={by:k,card:c,take:[],scopa:false,self:true};G.sel=null;G.tsel=[];return G.mv;}
+  else G.table.push(c);
   G.mv={by:k,card:c,take,scopa};G.sel=null;G.tsel=[];
   return G.mv;
 }
@@ -195,13 +197,13 @@ function afterMove(){
 }
 function endRound(){
   if(G.table.length&&G.last>=0){G.players[G.last].pile.push(...G.table);G.table=[];}
-  const st=G.sides.map(s=>{const pile=s.flatMap(i=>G.players[i].pile);return{cards:pile.length,coins:pile.filter(c=>c.s===0).length,sette:pile.some(isSette)?1:0,prim:primiera(pile),scope:s.reduce((a,i)=>a+G.players[i].scope,0)};});
+  const st=G.sides.map(s=>{const pile=s.flatMap(i=>G.players[i].pile);return{cards:pile.length,coins:pile.filter(c=>c.s===0).length,sette:pile.some(isSette)?1:0,prim:primiera(pile),scope:s.reduce((a,i)=>a+G.players[i].scope,0),nap:(()=>{if(!G.napola)return 0;const dn=new Set(pile.filter(c=>c.s===0).map(c=>c.r));let n=0;while(dn.has(n+1))n++;return n>=3?n:0;})()};});
   const best=f=>{let mx=-1,idx=-1,tie=false;st.forEach((x,i)=>{const v=f(x);if(v>mx){mx=v;idx=i;tie=false;}else if(v===mx)tie=true;});return tie||mx<=0?-1:idx;};
   const wc=best(x=>x.cards),wd=best(x=>x.coins),ws=best(x=>x.sette),wp=best(x=>x.prim);
   G.rows=st.map((x,i)=>{
-    const pts=(wc===i?1:0)+(wd===i?1:0)+(ws===i?1:0)+(wp===i?1:0)+x.scope;
+    const pts=(wc===i?1:0)+(wd===i?1:0)+(ws===i?1:0)+(wp===i?1:0)+x.scope+x.nap;
     G.sides[i].forEach(j=>G.players[j].score+=pts);
-    return{members:G.sides[i].slice(),cards:x.cards,coins:x.coins,sette:x.sette,prim:x.prim,scope:x.scope,wc:wc===i,wd:wd===i,ws:ws===i,wp:wp===i,pts,score:G.players[G.sides[i][0]].score};
+    return{members:G.sides[i].slice(),cards:x.cards,coins:x.coins,sette:x.sette,prim:x.prim,scope:x.scope,nap:x.nap,wn:x.nap>0,wc:wc===i,wd:wd===i,ws:ws===i,wp:wp===i,pts,score:G.players[G.sides[i][0]].score};
   });
   const sc=G.rows.map(r=>r.score),mx=Math.max(...sc),top=G.rows.filter(r=>r.score===mx);
   if(G.target===0){G.over=true;const hi=Math.max(...G.rows.map(r=>r.pts)),w=G.rows.filter(r=>r.pts===hi);G.winMembers=w.length===1?w[0].members.slice():null;}
@@ -247,7 +249,8 @@ function moveScore(i,m,L,un){
     s+=cp(c)+m.take.reduce((a,x)=>a+cp(x),0);
     const lastPlay=G.stock.length===0&&G.players.every((p,k)=>k===i?p.hand.length===1:!p.hand.length);
     if(!after.length&&!lastPlay&&!(G.variant==='a'&&c.r===1))s+=9;
-  }else s-=cp(c)*.5;
+  }else if(G.variant==='a'&&c.r===1&&!G.table.length)s+=cp(c);
+  else s-=cp(c)*.5;
   if(L.risk)s-=L.risk*riskOf(i,after,un);
   return s-c.r*.01;
 }
@@ -275,17 +278,17 @@ function coachHint(){
 /*ENDENGINE*/
 
 /* ===== Interfaccia ===== */
-const VERSION='1.2.0',BUILD='22/11/2026';
-const OPT={size:4,game:1,diff:1,variant:0,coach:false,net:'p2p',team:true,deck:0};
-try{const o=JSON.parse(localStorage.getItem('scopaopt')||'{}');if(o.size>=0&&o.size<=4)OPT.size=o.size;if(o.game>=0&&o.game<=3)OPT.game=o.game;if(o.diff>=0&&o.diff<=3)OPT.diff=o.diff;OPT.variant=o.variant===1?1:0;OPT.coach=o.coach===true;OPT.team=o.team!==false;if(o.deck>=0&&o.deck<=2)OPT.deck=o.deck;OPT.net=o.net==='mqtt'||o.net==='ntfy'?o.net:'p2p';}catch(e){}
+const VERSION='1.3.0',BUILD='22/11/2026';
+const OPT={size:4,game:1,diff:1,variant:0,coach:false,net:'p2p',team:true,deck:0,napola:false};
+try{const o=JSON.parse(localStorage.getItem('scopaopt')||'{}');if(o.size>=0&&o.size<=4)OPT.size=o.size;if(o.game>=0&&o.game<=3)OPT.game=o.game;if(o.diff>=0&&o.diff<=3)OPT.diff=o.diff;OPT.variant=o.variant===1?1:0;OPT.coach=o.coach===true;OPT.team=o.team!==false;OPT.napola=o.napola===true;if(o.deck>=0&&o.deck<=2)OPT.deck=o.deck;OPT.net=o.net==='mqtt'||o.net==='ntfy'?o.net:'p2p';}catch(e){}
 const saveOpt=()=>{try{localStorage.setItem('scopaopt',JSON.stringify(OPT));}catch(e){}};
 const SIZES=['Normali','Grandi','Molto grandi','Enormi','Auto (adatta)'],GAMES=['Secca (una mano)','A 11 punti','A 21 punti','A 31 punti'],VARS=['Scopa normale',"Scopa d'assi"];
 const DECKS=['Semplici','Napoletane','Milanesi'];
 const LEVELS=['Facile','Normale','Difficile','Esperto'],NETS={p2p:'Diretto (Wi-Fi)',mqtt:'MQTT (anche rete mobile)',ntfy:'ntfy (anche rete mobile, lento)'},NEXTNET={p2p:'mqtt',mqtt:'ntfy',ntfy:'p2p'};
 const verHTML=()=>`<p style="margin:12px 0 0;opacity:.8">Scopa · versione <b>${VERSION}</b> (${BUILD})</p>`;
-function optsHTML(){return`<button class="sec opt" data-act="optvar">🎴 Gioco: <b>${VARS[OPT.variant]}</b></button><button class="sec opt" data-act="optdeck">🃏 Carte: <b>${DECKS[OPT.deck]}</b></button><button class="sec opt" data-act="optteam">👥 In 4 giocatori: <b>${OPT.team?'A coppie':'Ognuno per sé'}</b></button><button class="sec opt" data-act="optsize">🔍 Dimensione: <b>${SIZES[OPT.size]}</b></button><button class="sec opt" data-act="optgame">🎯 Partita: <b>${GAMES[OPT.game]}</b></button><button class="sec opt" data-act="optdiff">🤖 Difficoltà: <b>${LEVELS[OPT.diff]}</b></button><button class="sec opt" data-act="optnet">🌐 Online: <b>${NETS[OPT.net]}</b></button>`;}
+function optsHTML(){return`<button class="sec opt" data-act="optvar">🎴 Gioco: <b>${VARS[OPT.variant]}</b></button><button class="sec opt" data-act="optnap">🔢 Napola: <b>${OPT.napola?'Sì':'No'}</b></button><button class="sec opt" data-act="optdeck">🃏 Carte: <b>${DECKS[OPT.deck]}</b></button><button class="sec opt" data-act="optteam">👥 In 4 giocatori: <b>${OPT.team?'A coppie':'Ognuno per sé'}</b></button><button class="sec opt" data-act="optsize">🔍 Dimensione: <b>${SIZES[OPT.size]}</b></button><button class="sec opt" data-act="optgame">🎯 Partita: <b>${GAMES[OPT.game]}</b></button><button class="sec opt" data-act="optdiff">🤖 Difficoltà: <b>${LEVELS[OPT.diff]}</b></button><button class="sec opt" data-act="optnet">🌐 Online: <b>${NETS[OPT.net]}</b></button>`;}
 const DK=()=>(ON&&ON.role==='client'&&G&&G.deck!==undefined)?G.deck:OPT.deck;
-const setTxt=seats=>VARS[OPT.variant]+', '+GAMES[OPT.game].toLowerCase()+', carte '+DECKS[OPT.deck].toLowerCase()+(seats===4?(OPT.team?', a coppie':', ognuno per sé'):'');
+const setTxt=seats=>VARS[OPT.variant]+', '+GAMES[OPT.game].toLowerCase()+', carte '+DECKS[OPT.deck].toLowerCase()+(OPT.napola?', con napola':'')+(seats===4?(OPT.team?', a coppie':', ognuno per sé'):'');
 const SC=['#b26a00','#d32f2f','#1565c0','#2e7d32'];
 const PIPS={1:[[50,70,1.9]],2:[[50,36],[50,104]],3:[[50,32],[50,70],[50,108]],4:[[31,38],[69,38],[31,102],[69,102]],5:[[31,38],[69,38],[50,70],[31,102],[69,102]],6:[[31,34],[69,34],[31,70],[69,70],[31,106],[69,106]],7:[[30,34],[70,34],[50,52],[30,70],[70,70],[30,106],[70,106]]};
 function figure(c,d,col){
@@ -322,8 +325,8 @@ function menuHTML(){
   <li>Mazzo napoletano da 40 carte (denari ♦, coppe ♥, spade ♠, bastoni ♣). Valori: 1–7 il numero, <b>F</b> fante = 8, <b>C</b> cavallo = 9, <b>R</b> re = 10. Da 2 a 4 giocatori; in 4 puoi giocare a coppie (tu con chi sta di fronte) o ognuno per sé, a scelta nel menu. Si inizia con 4 carte sul tavolo e 3 in mano a testa.</li>
   <li><b>Turno</b>: tocca una carta della mano. Se c'è sul tavolo una carta dello stesso valore la devi prendere (se ce ne sono più d'una scegli tu); altrimenti puoi prendere carte la cui somma è uguale al valore della tua carta (se ci sono più possibilità, tocca sul tavolo le carte che vuoi). Se non puoi prendere niente, posi la carta sul tavolo. Poi premi il pulsante giallo.</li>
   <li><b>Scopa</b> 🧹: se prendi tutte le carte del tavolo fai scopa (1 punto), tranne con l'ultima giocata della mano. A fine mano le carte rimaste sul tavolo vanno a chi ha preso per ultimo.</li>
-  <li><b>Punti a fine mano</b>: 1 chi ha più carte, 1 più denari, 1 settebello (7♦ ★), 1 primiera (migliore carta per ogni seme: 7=21, 6=18, asso=16, 5=15, 4=14, 3=13, 2=12, figure=10; serve un seme di ciascuno), più 1 per ogni scopa. A parità nessuno prende il punto.</li>
-  <li><b>Scopa d'assi</b> (asso piglia tutto): l'asso giocato prende tutte le carte del tavolo, ma non fa scopa. Se sul tavolo c'è già un asso, l'asso giocato prende solo quello; se il tavolo è vuoto l'asso resta lì. Se tra le prime 4 carte c'è un asso si rimescola. Le altre prese che svuotano il tavolo fanno scopa.</li>
+  <li><b>Punti a fine mano</b>: 1 chi ha più carte, 1 più denari, 1 settebello (7♦ ★), 1 primiera (migliore carta per ogni seme: 7=21, 6=18, asso=16, 5=15, 4=14, 3=13, 2=12, figure=10; serve un seme di ciascuno), più 1 per ogni scopa. A parità nessuno prende il punto. <b>Napola</b> (opzione nel menu, 🔢): chi ha asso, 2 e 3 di denari fa 3 punti, più 1 per ogni denaro successivo in sequenza (4, 5, 6…) fino a 10.</li>
+  <li><b>Scopa d'assi</b> (asso piglia tutto): l'asso giocato prende tutte le carte del tavolo, ma non fa scopa. Se sul tavolo c'è già un asso, l'asso giocato prende solo quello; se il tavolo è vuoto l'asso lo riprendi tu (senza scopa). Se tra le prime 4 carte c'è un asso si rimescola. Le altre prese che svuotano il tavolo fanno scopa.</li>
   <li>Si gioca una mano (secca) o fino a 11, 21 o 31 punti (menu): vince chi lo raggiunge per primo; a pari punti si gioca un'altra mano.</li></ul>
   <h3 style="margin:12px 0 2px">Livelli di difficoltà (🤖 nel menu)</h3><ul>
   <li><b>Facile</b>: gioca distratto, spesso a caso e non bada ai rischi.</li>
@@ -353,7 +356,7 @@ function roundHTML(){
   const line=(lab,f,w)=>`<tr><td>${lab}</td>${R.map(r=>`<td class="${r[w]?'w':''}">${f(r)}</td>`).join('')}</tr>`;
   const t='Mano finita';
   return`<div class="ov"><div class="box"><h2>${t}</h2><table><tr><th></th>${head}</tr>
-  ${line('Carte',r=>r.cards,'wc')}${line('Denari ♦',r=>r.coins,'wd')}${line('Settebello ★',r=>r.sette?'✓':'–','ws')}${line('Primiera',r=>r.prim||'–','wp')}${line('Scope 🧹',r=>r.scope,'')}
+  ${line('Carte',r=>r.cards,'wc')}${line('Denari ♦',r=>r.coins,'wd')}${line('Settebello ★',r=>r.sette?'✓':'–','ws')}${line('Primiera',r=>r.prim||'–','wp')}${G.napola?line('Napola',r=>r.nap||'–','wn'):''}${line('Scope 🧹',r=>r.scope,'')}
   <tr><td><b>Punti mano</b></td>${R.map(r=>`<td><b>+${r.pts}</b></td>`).join('')}</tr>${G.target?`<tr><td><b>Totale</b></td>${R.map(r=>`<td><b>${r.score}</b></td>`).join('')}</tr>`:''}</table>
   ${G.over?`<h3>${winTitle()}</h3><button data-act="newgame">${ON?'Esci':'Nuova partita'}</button>`:(ON&&ON.role==='client'?'<p>Attendi che l\'organizzatore continui…</p><button class="sec" data-act="newgame">Esci</button>':`<button data-act="next">Prossima mano</button>`)}</div></div>`;
 }
@@ -434,6 +437,7 @@ function act(a,d){
   if(a==='optsize'){OPT.size=(OPT.size+1)%5;saveOpt();render();return;}
   if(a==='optgame'){OPT.game=(OPT.game+1)%4;saveOpt();render();return;}
   if(a==='optdiff'){OPT.diff=(OPT.diff+1)%4;saveOpt();render();return;}
+  if(a==='optnap'){OPT.napola=!OPT.napola;saveOpt();render();return;}
   if(a==='optdeck'){OPT.deck=(OPT.deck+1)%3;saveOpt();render();return;}
   if(a==='optteam'){OPT.team=!OPT.team;saveOpt();render();return;}
   if(a==='optvar'){OPT.variant=1-OPT.variant;saveOpt();render();return;}
@@ -703,7 +707,7 @@ function onStart(){
 }
 function view(M,k){
   const n=M.players.length,map=i=>(i-k+n)%n,mine=M.turn===k&&M.phase!=='roundEnd';
-  const v={deck:OPT.deck,variant:M.variant,round:M.round,target:M.target,over:M.over,err:false,mv:null,last:M.last};
+  const v={deck:OPT.deck,napola:M.napola,variant:M.variant,round:M.round,target:M.target,over:M.over,err:false,mv:null,last:M.last};
   v.players=M.players.map((_,j)=>{const o=M.players[(j+k)%n];return{name:j===0?'Tu':(((j+k)%n)===0?ON.nicks[0]:o.name),human:j===0,hand:j===0?o.hand:o.hand.map((c,i)=>({id:-1000-j*100-i,s:0,r:1})),pile:o.pile,scope:o.scope,score:o.score};});
   v.table=M.table;v.stock=new Array(M.stock.length).fill(0);v.turn=map(M.turn);v.dealer=map(M.dealer);
   v.sides=M.sides.map(s=>s.map(map));
