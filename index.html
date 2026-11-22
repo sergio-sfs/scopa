@@ -44,6 +44,7 @@ input{-webkit-user-select:text;user-select:text;width:100%;font-size:18px;paddin
 .card.k1{color:#d32f2f;background:#fff1f1}
 .card.k2{color:#1565c0;background:#eaf2ff}
 .card.k3{color:#2e7d32;background:#ebf8ee}
+.card.svg{background:none;border:0}
 .card.sette::after{content:"★";position:absolute;top:1px;right:3px;font-size:calc(var(--fs)*.7);color:#e65100}
 .card.sel{transform:translateY(-12px);box-shadow:0 0 0 3px #ffd54f}
 .card.tsel{box-shadow:0 0 0 4px #ffd54f;transform:translateY(-4px)}
@@ -76,6 +77,16 @@ input{-webkit-user-select:text;user-select:text;width:100%;font-size:18px;paddin
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="g01" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#f2c230" stroke="#8a5a00" stroke-width="2"/><circle cx="20" cy="20" r="11" fill="none" stroke="#8a5a00" stroke-width="1.5"/><circle cx="20" cy="20" r="4" fill="#8a5a00"/></symbol>
+<symbol id="g11" viewBox="0 0 40 40"><path d="M8 6h24c0 10-4 17-12 17S8 16 8 6z" fill="#d32f2f" stroke="#7f1010" stroke-width="2"/><rect x="18" y="22" width="4" height="9" fill="#d32f2f" stroke="#7f1010"/><path d="M11 36h18l-3-5H14z" fill="#d32f2f" stroke="#7f1010" stroke-width="1.5"/></symbol>
+<symbol id="g21" viewBox="0 0 40 40"><path d="M7 35Q9 15 31 4Q27 22 13 36z" fill="#9db8e8" stroke="#1a3d8f" stroke-width="2"/><path d="M5 27l11 11" stroke="#1a3d8f" stroke-width="3.5" stroke-linecap="round"/></symbol>
+<symbol id="g31" viewBox="0 0 40 40"><path d="M10 33L29 9" stroke="#5d3b12" stroke-width="7" stroke-linecap="round"/><circle cx="29" cy="9" r="5.5" fill="#2e7d32" stroke="#1b5e20"/><circle cx="21" cy="19" r="3.5" fill="#2e7d32"/><circle cx="14" cy="28" r="3" fill="#2e7d32"/></symbol>
+<symbol id="g02" viewBox="0 0 40 40"><circle cx="20" cy="20" r="10" fill="#f2c230" stroke="#8a5a00" stroke-width="2"/><g stroke="#8a5a00" stroke-width="2.5" stroke-linecap="round"><path d="M20 2v6M20 32v6M2 20h6M32 20h6M7 7l4 4M29 29l4 4M33 7l-4 4M11 29l-4 4"/></g><circle cx="20" cy="20" r="3.5" fill="#8a5a00"/></symbol>
+<symbol id="g12" viewBox="0 0 40 40"><path d="M9 7h22l-3 13a8 8 0 0 1-16 0z" fill="#d32f2f" stroke="#7f1010" stroke-width="2"/><path d="M9 9c-6 0-6 9 1 9M31 9c6 0 6 9-1 9" fill="none" stroke="#7f1010" stroke-width="2"/><rect x="18" y="26" width="4" height="6" fill="#d32f2f" stroke="#7f1010"/><path d="M11 37h18l-2-5H13z" fill="#d32f2f" stroke="#7f1010" stroke-width="1.5"/></symbol>
+<symbol id="g22" viewBox="0 0 40 40"><path d="M20 2l4 5v19h-8V7z" fill="#9db8e8" stroke="#1a3d8f" stroke-width="2"/><rect x="9" y="26" width="22" height="4" rx="2" fill="#1a3d8f"/><rect x="18" y="30" width="4" height="6" fill="#1a3d8f"/><circle cx="20" cy="37" r="2.5" fill="#1a3d8f"/></symbol>
+<symbol id="g32" viewBox="0 0 40 40"><rect x="16" y="3" width="8" height="34" rx="4" fill="#8b5a1e" stroke="#4e300c" stroke-width="1.5"/><path d="M16 12h-6l-3 3M24 20h6l3-3M16 28h-6l-3 3" stroke="#2e7d32" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="20" cy="9" r="1.6" fill="#4e300c"/><circle cx="20" cy="24" r="1.6" fill="#4e300c"/></symbol>
+</defs></svg>
 <div id="app"></div>
 <script>
 /*ENGINE*/
@@ -118,7 +129,7 @@ const sideName=(s,nm)=>s.map(nm).join(' + ');
 function startGame(nopp,allBots,pre){
   const N=nopp+1;
   G={variant:OPT.variant===1?'a':'n',players:[],table:[],stock:[],turn:0,dealer:N-1,round:0,phase:'wait',sel:null,tsel:[],msg:'',err:false,over:false,rows:null,target:TARGETV[OPT.game],last:-1,mv:null,
-     sides:N===4?[[0,2],[1,3]]:Array.from({length:N},(_,i)=>[i])};
+     sides:(N===4&&OPT.team)?[[0,2],[1,3]]:Array.from({length:N},(_,i)=>[i])};
   G.players.push({name:'Tu',human:!allBots,hand:[],pile:[],scope:0,score:0});
   const bn=shuffle(BOTS.filter(x=>!(ON&&ON.nicks&&ON.nicks.includes(x))));
   for(let i=0;i<nopp;i++)G.players.push({name:bn[i],human:false,hand:[],pile:[],scope:0,score:0});
@@ -264,28 +275,49 @@ function coachHint(){
 /*ENDENGINE*/
 
 /* ===== Interfaccia ===== */
-const VERSION='1.0.0',BUILD='22/11/2026';
-const OPT={size:4,game:1,diff:1,variant:0,coach:false,net:'p2p'};
-try{const o=JSON.parse(localStorage.getItem('scopaopt')||'{}');if(o.size>=0&&o.size<=4)OPT.size=o.size;if(o.game>=0&&o.game<=3)OPT.game=o.game;if(o.diff>=0&&o.diff<=3)OPT.diff=o.diff;OPT.variant=o.variant===1?1:0;OPT.coach=o.coach===true;OPT.net=o.net==='mqtt'||o.net==='ntfy'?o.net:'p2p';}catch(e){}
+const VERSION='1.1.0',BUILD='22/11/2026';
+const OPT={size:4,game:1,diff:1,variant:0,coach:false,net:'p2p',team:true,deck:0};
+try{const o=JSON.parse(localStorage.getItem('scopaopt')||'{}');if(o.size>=0&&o.size<=4)OPT.size=o.size;if(o.game>=0&&o.game<=3)OPT.game=o.game;if(o.diff>=0&&o.diff<=3)OPT.diff=o.diff;OPT.variant=o.variant===1?1:0;OPT.coach=o.coach===true;OPT.team=o.team!==false;if(o.deck>=0&&o.deck<=2)OPT.deck=o.deck;OPT.net=o.net==='mqtt'||o.net==='ntfy'?o.net:'p2p';}catch(e){}
 const saveOpt=()=>{try{localStorage.setItem('scopaopt',JSON.stringify(OPT));}catch(e){}};
 const SIZES=['Normali','Grandi','Molto grandi','Enormi','Auto (adatta)'],GAMES=['Secca (una mano)','A 11 punti','A 21 punti','A 31 punti'],VARS=['Scopa normale',"Scopa d'assi"];
+const DECKS=['Semplici','Napoletane','Milanesi'];
 const LEVELS=['Facile','Normale','Difficile','Esperto'],NETS={p2p:'Diretto (Wi-Fi)',mqtt:'MQTT (anche rete mobile)',ntfy:'ntfy (anche rete mobile, lento)'},NEXTNET={p2p:'mqtt',mqtt:'ntfy',ntfy:'p2p'};
 const verHTML=()=>`<p style="margin:12px 0 0;opacity:.8">Scopa · versione <b>${VERSION}</b> (${BUILD})</p>`;
-function optsHTML(){return`<button class="sec opt" data-act="optvar">🎴 Gioco: <b>${VARS[OPT.variant]}</b></button><button class="sec opt" data-act="optsize">🔍 Carte: <b>${SIZES[OPT.size]}</b></button><button class="sec opt" data-act="optgame">🎯 Partita: <b>${GAMES[OPT.game]}</b></button><button class="sec opt" data-act="optdiff">🤖 Difficoltà: <b>${LEVELS[OPT.diff]}</b></button><button class="sec opt" data-act="optnet">🌐 Online: <b>${NETS[OPT.net]}</b></button>`;}
+function optsHTML(){return`<button class="sec opt" data-act="optvar">🎴 Gioco: <b>${VARS[OPT.variant]}</b></button><button class="sec opt" data-act="optdeck">🃏 Carte: <b>${DECKS[OPT.deck]}</b></button><button class="sec opt" data-act="optteam">👥 In 4 giocatori: <b>${OPT.team?'A coppie':'Ognuno per sé'}</b></button><button class="sec opt" data-act="optsize">🔍 Dimensione: <b>${SIZES[OPT.size]}</b></button><button class="sec opt" data-act="optgame">🎯 Partita: <b>${GAMES[OPT.game]}</b></button><button class="sec opt" data-act="optdiff">🤖 Difficoltà: <b>${LEVELS[OPT.diff]}</b></button><button class="sec opt" data-act="optnet">🌐 Online: <b>${NETS[OPT.net]}</b></button>`;}
+const SC=['#b26a00','#d32f2f','#1565c0','#2e7d32'];
+const PIPS={1:[[50,70,1.9]],2:[[50,36],[50,104]],3:[[50,32],[50,70],[50,108]],4:[[31,38],[69,38],[31,102],[69,102]],5:[[31,38],[69,38],[50,70],[31,102],[69,102]],6:[[31,34],[69,34],[31,70],[69,70],[31,106],[69,106]],7:[[30,34],[70,34],[50,52],[30,70],[70,70],[30,106],[70,106]]};
+function figure(c,d,col){
+  const r=c.r;
+  let f=`<rect x="24" y="22" width="52" height="96" rx="4" fill="${col}33" stroke="${col}" stroke-width="1.5"/>`;
+  if(r===8)f+=`<circle cx="50" cy="48" r="8" fill="#f1c9a5" stroke="${col}"/><path d="M41 42h18l-3-8H44z" fill="${col}"/><path d="M38 58h24l6 30H32z" fill="${col}"/>`;
+  else if(r===9)f+=`<ellipse cx="46" cy="76" rx="20" ry="10" fill="${col}"/><path d="M60 72l6-22 12-2 2 8-10 6-2 14z" fill="${col}"/><path d="M32 82v14M40 84v14M54 84v14M62 82v14" stroke="${col}" stroke-width="3"/><circle cx="44" cy="52" r="7" fill="#f1c9a5" stroke="${col}"/><path d="M38 60h12l2 14H36z" fill="${col}" opacity=".8"/>`;
+  else f+=`<path d="M38 44l-2-12 7 6 7-9 7 9 7-6-2 12z" fill="#f2c230" stroke="#8a5a00"/><circle cx="50" cy="54" r="9" fill="#f1c9a5" stroke="${col}"/><path d="M36 66h28l8 28H28z" fill="${col}"/>`;
+  return f+`<use href="#g${c.s}${d}" x="39" y="94" width="22" height="22"/>`;
+}
+function cardSVG(c,d){
+  const col=SC[c.s],bg=d===1?'#fbf1d4':'#fffdf5',bd=d===1?'#c9a24a':'#8a8a8a';
+  let g='';
+  if(c.r<=7)PIPS[c.r].forEach(p=>{const w=p[2]?21*p[2]:21;g+=`<use href="#g${c.s}${d}" x="${p[0]-w/2}" y="${p[1]-w/2}" width="${w}" height="${w}"/>`;});
+  else g=figure(c,d,col);
+  const idx=`<text x="9" y="22" font-size="19" font-weight="800" fill="${col}" font-family="system-ui,sans-serif">${RL(c.r)}</text><use href="#g${c.s}${d}" x="5" y="25" width="12" height="12"/>`;
+  return`<svg viewBox="0 0 100 140" width="100%" height="100%"><rect x="1" y="1" width="98" height="138" rx="8" fill="${bg}" stroke="${bd}" stroke-width="2"/>${d===2?`<rect x="5" y="5" width="90" height="130" rx="5" fill="none" stroke="${bd}" stroke-width=".8"/>`:''}${g}${idx}<g transform="rotate(180 50 70)">${idx}</g></svg>`;
+}
 function cardHTML(c,o={}){
   const cl=['card','k'+c.s];if(o.sm)cl.push('sm');if(isSette(c))cl.push('sette');
+  if(OPT.deck>0)cl.push('svg');
   if(o.sel)cl.push('sel');if(o.tsel)cl.push('tsel');if(o.cand)cl.push('cand');if(o.tip)cl.push('tip');
-  return`<div class="${cl.join(' ')}" ${o.act?`data-act="${o.act}" data-id="${c.id}"`:''}><span>${RL(c.r)}</span><span class="su">${SS[c.s]}</span></div>`;
+  const inner=OPT.deck>0?cardSVG(c,OPT.deck):`<span>${RL(c.r)}</span><span class="su">${SS[c.s]}</span>`;
+  return`<div class="${cl.join(' ')}" ${o.act?`data-act="${o.act}" data-id="${c.id}"`:''}>${inner}</div>`;
 }
 const myName=i=>G.players[i].name;
 function startHTML(){
-  return`<div class="ov"><div class="box"><h2>🧹 Scopa</h2><p>${VARS[OPT.variant]} · quanti avversari?</p>
-  <button data-act="start" data-n="1">1</button><button data-act="start" data-n="2">2</button><button data-act="start" data-n="3">3 (a coppie)</button>
+  return`<div class="ov"><div class="box"><h2>🧹 Scopa</h2><p>${VARS[OPT.variant]} · quanti avversari?<br><small style="opacity:.8">Con 3 avversari (4 giocatori) puoi scegliere sotto se giocare a coppie o ognuno per sé.</small></p>
+  <button data-act="start" data-n="1">1</button><button data-act="start" data-n="2">2</button><button data-act="start" data-n="3">3</button>
   ${optsHTML()}<p><button data-act="online">🌐 Gioca online con amici</button></p><p><button class="sec" data-act="rules">Guida e regole</button></p>${verHTML()}</div></div>`;
 }
 function menuHTML(){
   return`<div class="ov"><div class="box"><h2>Guida e regole</h2><ul>
-  <li>Mazzo napoletano da 40 carte (denari ♦, coppe ♥, spade ♠, bastoni ♣). Valori: 1–7 il numero, <b>F</b> fante = 8, <b>C</b> cavallo = 9, <b>R</b> re = 10. Da 2 a 4 giocatori; in 4 si gioca a coppie (tu con chi sta di fronte). Si inizia con 4 carte sul tavolo e 3 in mano a testa.</li>
+  <li>Mazzo napoletano da 40 carte (denari ♦, coppe ♥, spade ♠, bastoni ♣). Valori: 1–7 il numero, <b>F</b> fante = 8, <b>C</b> cavallo = 9, <b>R</b> re = 10. Da 2 a 4 giocatori; in 4 puoi giocare a coppie (tu con chi sta di fronte) o ognuno per sé, a scelta nel menu. Si inizia con 4 carte sul tavolo e 3 in mano a testa.</li>
   <li><b>Turno</b>: tocca una carta della mano. Se c'è sul tavolo una carta dello stesso valore la devi prendere (se ce ne sono più d'una scegli tu); altrimenti puoi prendere carte la cui somma è uguale al valore della tua carta (se ci sono più possibilità, tocca sul tavolo le carte che vuoi). Se non puoi prendere niente, posi la carta sul tavolo. Poi premi il pulsante giallo.</li>
   <li><b>Scopa</b> 🧹: se prendi tutte le carte del tavolo fai scopa (1 punto), tranne con l'ultima giocata della mano. A fine mano le carte rimaste sul tavolo vanno a chi ha preso per ultimo.</li>
   <li><b>Punti a fine mano</b>: 1 chi ha più carte, 1 più denari, 1 settebello (7♦ ★), 1 primiera (migliore carta per ogni seme: 7=21, 6=18, asso=16, 5=15, 4=14, 3=13, 2=12, figure=10; serve un seme di ciascuno), più 1 per ogni scopa. A parità nessuno prende il punto.</li>
@@ -336,12 +368,12 @@ function coachCached(){
   return G._ch;
 }
 function gameHTML(){
-  const me=H(),myTurn=G.turn===0&&G.phase==='play',n=G.players.length;
+  const me=H(),myTurn=G.turn===0&&G.phase==='play',n=G.players.length,team=n===4&&G.sides.length===2;
   const so=myTurn?selOpts():null,cand=new Set(),hint=OPT.coach&&!ON&&myTurn?coachCached():null;
   if(so&&so.opts.length>1)so.opts.forEach(o=>o.forEach(x=>cand.add(x.id)));
   const auto=so&&so.opts.length===1?so.opts[0].map(x=>x.id):[];
   const tip=new Set(hint&&hint.take||[]);
-  const opps=G.players.slice(1).map((p,k)=>`<div class="opp${G.turn===k+1&&G.phase!=='roundEnd'?' act':''}"><b>${esc(p.name)}</b>${n===4&&k+1===2?' 🤝':''}<small>${infoLine(p)}</small></div>`).join('');
+  const opps=G.players.slice(1).map((p,k)=>`<div class="opp${G.turn===k+1&&G.phase!=='roundEnd'?' act':''}"><b>${esc(p.name)}</b>${team&&k+1===2?' 🤝':''}<small>${infoLine(p)}</small></div>`).join('');
   const tbl=G.table.map(c=>cardHTML(c,{act:'tcard',tsel:G.tsel.includes(c.id)||auto.includes(c.id),cand:cand.has(c.id)&&!G.tsel.includes(c.id),tip:tip.has(c.id)})).join('')||'<div class="empty">Tavolo vuoto</div>';
   const hand=me.hand.map(c=>cardHTML(c,{act:'card',sel:G.sel===c.id,tip:hint&&hint.hand===c.id&&G.sel!==c.id})).join('');
   let label='Gioca',ok=false;
@@ -350,7 +382,7 @@ function gameHTML(){
   <div class="opps${n>3?' many':''}">${opps}</div>
   <div id="tbl">${tbl}</div>
   <div class="piles"><div class="pile"><div class="card back sm"><b class="cnt">${G.stock.length}</b></div><small>mazzo</small></div><div class="msg${G.err?' err':''}">${G.msg||''}</div></div>${hint&&hint.text?`<div class="coach">${hint.text}</div>`:''}
-  <div class="me${myTurn?' act':''}"><b>Tu</b>${n===4?' (con '+esc(G.players[2].name)+')':''}<small>${infoLine(me)}</small></div>
+  <div class="me${myTurn?' act':''}"><b>Tu</b>${team?' (con '+esc(G.players[2].name)+')':''}<small>${infoLine(me)}</small></div>
   <div class="hand">${hand}</div>
   <div class="btns">
    ${!ON?`<button class="sec${OPT.coach?' on':''}" data-act="hint" title="Istruttore: acceso/spento">💡</button>`:''}
@@ -400,6 +432,8 @@ function act(a,d){
   if(a==='optsize'){OPT.size=(OPT.size+1)%5;saveOpt();render();return;}
   if(a==='optgame'){OPT.game=(OPT.game+1)%4;saveOpt();render();return;}
   if(a==='optdiff'){OPT.diff=(OPT.diff+1)%4;saveOpt();render();return;}
+  if(a==='optdeck'){OPT.deck=(OPT.deck+1)%3;saveOpt();render();return;}
+  if(a==='optteam'){OPT.team=!OPT.team;saveOpt();render();return;}
   if(a==='optvar'){OPT.variant=1-OPT.variant;saveOpt();render();return;}
   if(a==='optnet'){OPT.net=NEXTNET[OPT.net]||'p2p';saveOpt();render();return;}
   if(a==='hint'){if(ON)return;OPT.coach=!OPT.coach;saveOpt();render();return;}
@@ -589,7 +623,7 @@ function onlineHTML(){
   let b='';
   if(o.state==='menu')b=`<h2>🌐 Gioca online</h2><p>Parola d'accesso (te la dà chi ti invita)</p><input id="key" type="password" value="${esc(o.key||'')}" placeholder="Parola"><p>Il tuo nome</p><input id="nick" maxlength="12" value="${esc(o.nick||'')}" placeholder="Nome"><p>Collegamento (se crei tu la stanza):<br><button class="sec" data-act="onet">${NETS[OPT.net]}</button></p><p><button data-act="ocreate">Crea stanza</button></p><p style="margin-top:14px">Hai un codice di invito?</p><input id="code" maxlength="5" value="${esc(o.code||'')}" placeholder="CODICE" style="text-transform:uppercase"><p><button data-act="ojoin">Entra nella stanza</button></p>${(()=>{const l=lastLoad();return l&&!hostLoad()?`<p style="margin-top:14px;border-top:1px solid #fff3;padding-top:10px">↩ Ultima stanza: <b>${esc(l.code)}</b> come <b>${esc(l.nick)}</b></p><p><button data-act="orejoin">Rientra nella stanza</button> <button class="sec" data-act="olast">Dimentica</button></p>`:'';})()}${(()=>{const sv=hostLoad();return sv?`<p style="margin-top:14px;border-top:1px solid #fff3;padding-top:10px">▶ Partita salvata: stanza <b>${esc(sv.code)}</b>, ${sv.nicks.map(esc).join(', ')} (${new Date(sv.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})</p><p><button data-act="oresume">Riprendi come organizzatore</button> <button class="sec" data-act="odrop">Elimina</button></p>`:'';})()}${o.err?`<p style="color:#ffab91">${esc(o.err)}</p>`:''}<button class="sec" data-act="oback">Indietro</button>`;
   else if(o.state==='starting'||o.state==='connecting')b=`<h2>🌐 Connessione…</h2><p>Un attimo.</p><button class="sec" data-act="oback">Annulla</button>`;
-  else if(o.state==='lobby')b=`<h2>Stanza <b>${o.code}</b></h2><p>Giocatori (${o.nicks.length}/${o.seats}): <b>${players}</b></p><p>Posti totali: <button class="sec" data-act="oseats">${o.seats}</button><br><small>I posti liberi li occupa il computer. Con 4 posti si gioca a coppie (1°+3° contro 2°+4°).</small></p><p>Attesa se qualcuno si assenta: <button class="sec" data-act="ograce">${o.grace} min</button></p><p><button data-act="oshare">📨 Invita (WhatsApp / condividi)</button></p><p><button data-act="ostart" ${o.nicks.length>=2?'':'disabled'}>Avvia partita</button></p>${o.nicks.length<2?'<small>Aspetta che entri almeno un amico.</small>':''}<p><button class="sec" data-act="oback">Annulla</button></p>`;
+  else if(o.state==='lobby')b=`<h2>Stanza <b>${o.code}</b></h2><p>Giocatori (${o.nicks.length}/${o.seats}): <b>${players}</b></p><p>Posti totali: <button class="sec" data-act="oseats">${o.seats}</button><br><small>I posti liberi li occupa il computer. Con 4 posti: a coppie o ognuno per sé (Impostazioni → In 4 giocatori).</small></p><p>Attesa se qualcuno si assenta: <button class="sec" data-act="ograce">${o.grace} min</button></p><p><button data-act="oshare">📨 Invita (WhatsApp / condividi)</button></p><p><button data-act="ostart" ${o.nicks.length>=2?'':'disabled'}>Avvia partita</button></p>${o.nicks.length<2?'<small>Aspetta che entri almeno un amico.</small>':''}<p><button class="sec" data-act="oback">Annulla</button></p>`;
   else if(o.state==='waiting')b=`<h2>Stanza <b>${esc(o.code)}</b></h2><p>Giocatori: <b>${players}</b></p><p>In attesa che l'organizzatore avvii la partita…</p><button class="sec" data-act="oback">Esci</button>`;
   else b=`<h2>🌐 Online</h2><p style="color:#ffab91">${esc(o.err||'Connessione chiusa.')}</p><button data-act="oback">OK</button>`;
   return`<div class="ov"><div class="box">${b}</div></div>`;
